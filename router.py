@@ -8,10 +8,13 @@ OUT_LEG_IP = "192.168.106.3"
 
 OUT_LEG_MAC = "08:00:27:03:33:bc"
 
+PROXY_DST = "192.168.106.49"
+
 def route(packet):
     print(f"Got packet from {packet[IP].src} to {packet[IP].dst}")
     new_packet = packet.copy()
     new_packet[IP].src = OUT_LEG_IP
+    new_packet[IP].dst = PROXY_DST
     new_packet[Ether].src = OUT_LEG_MAC
     new_packet[Ether].dst = "ff:ff:ff:ff:ff:ff"
     new_packet[IP].ttl = packet[IP].ttl - 1
