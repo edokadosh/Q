@@ -15,7 +15,12 @@ def route(packet):
     print("received packet")
     print(packet.summary())
     if IP in packet and ip_address(packet[IP].dst) in OUT_SUBNET:
-        sendp(packet, iface=OUT_IFACE)
+        new_packet = packet.copy()
+        new_packet[Ether].dst = "ff:ff:ff:ff:ff:ff"
+        new_packet[IP].ttl = packet[IP].ttl - 1
+
+        del new_packet[IP].chksum  # recalculate checksum
+        sendp(new_packet, iface=OUT_IFACE)
         print("sent packet")
 
 def main():
