@@ -10,12 +10,14 @@ OUT_LEG_IP = "192.168.106.3"
 IN_SUBNET = ip_network("192.168.56.0/24")
 OUT_SUBNET = ip_network("192.168.106.0/24")
 
+OUT_LEG_MAC = "08:00:27:03:33:bc"
 
 def route(packet):
     print("received packet")
     print(packet.summary())
     if IP in packet and ip_address(packet[IP].dst) in OUT_SUBNET:
         new_packet = packet.copy()
+        new_packet[Ether].src = OUT_LEG_MAC
         new_packet[Ether].dst = "ff:ff:ff:ff:ff:ff"
         new_packet[IP].ttl = packet[IP].ttl - 1
 
