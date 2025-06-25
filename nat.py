@@ -81,17 +81,14 @@ def handle_nat_outwards(pkt):
     print(f"Translated outwards {nat_table[new_src_port][IN_IP]}:{src_port} to {OUT_LEG_IP}:{new_src_port}")
 
 
-def firewall_rule(pkt):
-    return not (UDP in pkt and (pkt[UDP].dport == BAD_UDP_PORT or pkt[UDP].sport == BAD_UDP_PORT))
 
-
-def handle_nat_inwards(pkt):
+def handle_nat_inwards(pkt, rules: firewall):
     print(f"Received packet: {pkt.summary()}")
     if TCP not in pkt and UDP not in pkt:
         return
     dst_port = pkt[TCP].dport if TCP in pkt else pkt[UDP].dport
-    if not firewall_rule(pkt):
-        print(f"Packet blocked by firewall rule: {pkt.summary()}")
+    if rules.is_blocked(pkt):
+        print(f"Packet blocked by firewall rules: {pkt.summary()}")
         return
     if pkt[IP].dst == OUT_LEG_IP:
         if dst_port not in nat_table:
@@ -114,7 +111,25 @@ def nat_outwards():
     sniff(iface=IN_IFACE, prn=handle_nat_outwards, filter=f"ip and dst host {IN_LEG_IP}")
 
 def nat_inwards():
-    sniff(iface=OUT_IFACE, prn=handle_nat_inwards, filter=f"ip and dst host {OUT_LEG_IP}")
+    rules = firewall(
+        udp_rules=BlockingRules(
+            bad_src_port=[BAD_UDP_PORT],
+            bad_dst_port=[],
+            bad_src_ip=["1.1.1.1"],
+            bad_dst_ip=[],
+            bad_src_mac=[],
+            bad_dst_mac=[]
+        ),
+        tcp_rules=BlockingRules(
+            bad_src_port=[BAD_UDP_PORT],
+            bad_dst_port=[],
+            bad_src_ip=[],
+            bad_dst_ip=[],
+            bad_src_mac=[],
+            bad_dst_mac=[]
+        )
+    )
+    sniff(iface=OUT_IFACE, prn=lambda p: handle_nat_inwards(p, rules), filter=f"ip and dst host {OUT_LEG_IP}")
 
 def main():
     t_outwards = threading.Thread(target=nat_outwards)
