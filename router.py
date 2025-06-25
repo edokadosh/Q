@@ -1,14 +1,27 @@
-from scapy.all import sniff, sendp
+from scapy.all import *
+from ipaddress import ip_address, ip_network
 
-SRC_IFACE = "enp0s8"
-DST_IFACE = "enp0s9"
+IN_IFACE = "enp0s8"
+OUT_IFACE = "enp0s9"
+
+IN_LEG_IP = "192.168.56.101"
+OUT_LEG_IP = "192.168.106.3"
+
+IN_SUBNET = ip_network("192.168.56.0/24")
+OUT_SUBNET = ip_network("192.168.106.0/24")
+
 
 def route(packet):
-    sendp(packet, iface=DST_IFACE)
-    print("sent packet")
+    print("received packet")
+    print(packet.summary())
+    if IP in packet and ip_address(packet[IP].dst) in OUT_SUBNET:
+        sendp(packet, iface=OUT_IFACE)
+        print("sent packet")
 
 def main():
-    sniff(iface=SRC_IFACE, prn= route)
+    sniff(iface=IN_IFACE, prn= route)
 
 if __name__ == "__main__":
     main()
+
+    
