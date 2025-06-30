@@ -63,7 +63,7 @@ def generate_example_ping_request(my_mac, my_ip):
     parser = ModularPacketParser(parsers={
         'ethernet': Ethernet(my_mac),
         'ip': IP(),
-        'icmp': ICMP(),  # Assuming ICMP is handled as plaintext for simplicity
+        'icmp': ICMP(),
     })
 
     packet = parser.encapsulate(
