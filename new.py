@@ -2,6 +2,8 @@ from scapy.all import conf
 from ModularPacketParser import ModularPacketParser
 from Ethernet import Ethernet, EthernetType
 from ARP import ARP, ARPOperation
+from IP import IP, TransportLayerProtocol
+from ICMP import ICMP, ICMPType
 from LayerParser import Plaintext
 
 # MY_MAC_ADDRESS = "08:00:27:90:bc:1b"
@@ -34,9 +36,7 @@ def get_interface_info():
             
     return interface, my_mac, my_ip
 
-def main():
-    interface, my_mac, my_ip = get_interface_info()
-
+def generate_example_arp_request(my_mac, my_ip):
     parser = ModularPacketParser(parsers={
         'ethernet': Ethernet(my_mac),
         'arp': ARP(),
@@ -45,21 +45,58 @@ def main():
     packet = parser.encapsulate(
         ethernet={
             'dst_mac': 'ff:ff:ff:ff:ff:ff',
-            'ethertype': EthernetType.ARP.value,
+            'ethertype': EthernetType.ARP,
         },
         arp={
             'sender_hardware': my_mac,
             'sender_protocol': my_ip,
             'target_hardware': 'ff:ff:ff:ff:ff:ff',
             'target_protocol': '1.1.1.1',
-            'operation': ARPOperation.REQUEST.value
+            'operation': ARPOperation.REQUEST
         }
     )
 
+    return parser, packet
+
+
+def generate_example_ping_request(my_mac, my_ip):
+    parser = ModularPacketParser(parsers={
+        'ethernet': Ethernet(my_mac),
+        'ip': IP(),
+        'icmp': ICMP(),  # Assuming ICMP is handled as plaintext for simplicity
+    })
+
+    packet = parser.encapsulate(
+        ethernet={
+            'dst_mac': 'ff:ff:ff:ff:ff:ff',
+            'ethertype': EthernetType.IPV4,
+        },
+        ip={
+            'src_ip': my_ip,
+            'dst_ip': '1.1.1.1',
+            'protocol': TransportLayerProtocol.ICMP,
+        },
+        icmp={
+            'icmp_type': ICMPType.ECHO_REQUEST,
+            'code': 0,
+            'rest_of_header': 0,
+        }
+    )
+
+    return parser, packet
+    
+def main():
+    interface, my_mac, my_ip = get_interface_info()
+
+    parser, packet = generate_example_ping_request(my_mac, my_ip)
+
     iface = interface
-    sock = conf.L2socket(iface=iface, promisc=True)
-    sock.send(packet) # Send data
-    recv = sock.recv_raw() # Receive data
+    sock1 = conf.L2socket(iface=iface, promisc=True)
+    sock2 = conf.L2socket(iface=iface, promisc=True)
+    sock1.send(packet) # Send data
+    parsed = parser.recv(sock2)
+    print("Parsed Packet:")
+    print(parsed)
 
 if __name__ == "__main__":
     main()
