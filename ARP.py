@@ -27,7 +27,7 @@ class ARP(LayerParser):
     def __init__(self):
         pass
 
-    def recv(self, data, raw_socket):
+    def recv(self, data):
         arp_header_size = struct.calcsize(ARP_HEADER_FORMAT)
         if len(data) < arp_header_size:
             raise ValueError("Invalid ARP packet length")
@@ -59,7 +59,7 @@ class ARP(LayerParser):
             'target_protocol': target_protocol
         }, None
 
-    def encapsulate(self, sender_hardware, sender_protocol, target_hardware, target_protocol, operation):
+    def encapsulate(self, sender_hardware, sender_protocol, target_hardware, target_protocol, operation, payload=None):
         hardware_type = HardwareType.ETHERNET.value
         protocol_type = ProtocolType.IPV4.value
 
@@ -72,7 +72,7 @@ class ARP(LayerParser):
             protocol_type,
             hardware_size,
             protocol_size,
-            operation
+            operation.value
         )                   
 
         sender_hardware_bytes = mac_to_bytes(sender_hardware)

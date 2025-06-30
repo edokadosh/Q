@@ -5,6 +5,7 @@ from utils import mac_to_bytes, bytes_to_mac, ip_to_bytes, bytes_to_ip
 
 
 ETHERNET_HEADER_FORMAT = '!6s6sH'  # Destination MAC, Source MAC, EtherType
+ETHERNET_BROADCAST_MAC = 'ff:ff:ff:ff:ff:ff'
 
 class EthernetType(Enum):
     IPV4 = 0x0800
@@ -16,10 +17,11 @@ EthernetTypeToNextLayerLength = {
 }
 
 class Ethernet(LayerParser):
-    def __init__(self, mac_address):
+    def __init__(self, mac_address, ethertype=None):
         self.mac_address = mac_address.lower()
+        self.ethertype = ethertype
 
-    def recv(self, data, raw_socket):
+    def recv(self, data):
         header_size = struct.calcsize(ETHERNET_HEADER_FORMAT)
         if len(data) < header_size:
             raise ValueError(f"Invalid Ethernet frame length {len(data)}, Expected: {struct.calcsize(ETHERNET_HEADER_FORMAT)}")
@@ -29,15 +31,18 @@ class Ethernet(LayerParser):
         src_mac = bytes_to_mac(src_mac)
         
         if ethertype not in EthernetType._value2member_map_.keys():
-            raise ValueError(f"Unsupported Ethernet type: {ethertype}")
+            print(f"Unsupported Ethernet type: {ethertype}")
+            return None, None
 
         payload_length = EthernetTypeToNextLayerLength.get(EthernetType(ethertype), 0)
-        if len(data) >= header_size + payload_length:
-            payload = data[header_size:]
-        else:
-            payload = data[header_size:] + raw_socket.recv_raw(header_size + payload_length - len(data))[1]
+        if len(data) < header_size + payload_length:
+            raise ValueError(f"Invalid Ethernet frame length {len(data)}, Expected: {header_size + payload_length}")
 
-        if dst_mac == self.mac_address or dst_mac == 'ff:ff:ff:ff:ff:ff':
+        payload = data[header_size:]
+        if self.ethertype and ethertype != self.ethertype.value:
+            return None, None
+
+        if dst_mac == self.mac_address or dst_mac == ETHERNET_BROADCAST_MAC:
             return {
                 'dst_mac': dst_mac,
                 'src_mac': src_mac,

@@ -14,7 +14,7 @@ class ICMP(LayerParser):
     def __init__(self):
         pass
 
-    def recv(self, data, raw_socket):
+    def recv(self, data):
         if len(data) < struct.calcsize(ICMP_HEADER_FORMAT):
             raise ValueError("Invalid ICMP packet length")
         

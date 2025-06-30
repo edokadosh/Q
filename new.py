@@ -5,6 +5,7 @@ from ARP import ARP, ARPOperation
 from IP import IP, TransportLayerProtocol
 from ICMP import ICMP, ICMPType
 from LayerParser import Plaintext
+from  UDPSocket import UDPSocket
 
 # MY_MAC_ADDRESS = "08:00:27:90:bc:1b"
 
@@ -63,7 +64,7 @@ def generate_example_ping_request(my_mac, my_ip):
     parser = ModularPacketParser(parsers={
         'ethernet': Ethernet(my_mac),
         'ip': IP(),
-        'icmp': ICMP(),  # Assuming ICMP is handled as plaintext for simplicity
+        'icmp': ICMP(),
     })
 
     packet = parser.encapsulate(
@@ -86,17 +87,30 @@ def generate_example_ping_request(my_mac, my_ip):
     return parser, packet
     
 def main():
-    interface, my_mac, my_ip = get_interface_info()
+    # interface, my_mac, my_ip = get_interface_info()
 
-    parser, packet = generate_example_ping_request(my_mac, my_ip)
+    # parser, packet = generate_example_ping_request(my_mac, my_ip)
 
-    iface = interface
-    sock1 = conf.L2socket(iface=iface, promisc=True)
-    sock2 = conf.L2socket(iface=iface, promisc=True)
-    sock1.send(packet) # Send data
-    parsed = parser.recv(sock2)
-    print("Parsed Packet:")
-    print(parsed)
+    # iface = interface
+    # sock1 = conf.L2socket(iface=iface, promisc=True)
+    # sock2 = conf.L2socket(iface=iface, promisc=True)
+    # sock1.send(packet) # Send data
+    # parsed = parser.recv(sock2)
+    # print("Parsed Packet:")
+    # print(parsed)
+    src_port = int(input("Enter source port: "))
+    dst_port = int(input("Enter destination port: "))
+
+    sock = UDPSocket(src_port, '127.0.0.1', dst_port)
+    msg = ""
+    while True:
+        msg = input("Enter message: ")
+        if msg == "exit":
+            break
+        sock.send(msg.encode())
+        response = sock.recv()
+        print(f"{response.decode() if response else 'No response'}")
+
 
 if __name__ == "__main__":
     main()

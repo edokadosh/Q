@@ -17,7 +17,7 @@ class IP(LayerParser):
     def __init__(self):
         pass
 
-    def recv(self, data, raw_socket):
+    def recv(self, data):
         header_length = struct.calcsize(IP_HEADER_FORMAT)
         if len(data) < header_length:
             raise ValueError("Invalid IP packet length")
@@ -28,7 +28,7 @@ class IP(LayerParser):
         ihl = header[0] & 0x0F
         
         if version != VERSION:
-            raise ValueError(f"Unsupported IP version: {version}")
+            return None, None
         
         total_length = header[2]
         ttl = header[5]
@@ -36,21 +36,14 @@ class IP(LayerParser):
         if protocol not in [p.value for p in TransportLayerProtocol]:
             raise ValueError(f"Unsupported protocol: {protocol}")
         
-        checksum = header[7]
-        
         if len(data) < total_length:
-            remaining_length = total_length - len(data)
-            payload = raw_socket.recv_raw(remaining_length)[1]
-            if len(payload) < remaining_length:
-                print("Incomplete packet received")
-                raise ValueError("Incomplete packet received")
-            payload = data[header_length:] + payload
-        else:
-            payload = data[header_length:]
+            raise ValueError(f"Invalid IP packet length {len(data)}, Expected: {total_length}")
 
-        if IPV4_checksum(data[header_length:] + payload) != 0:
-            print("Invalid checksum")
-            raise ValueError("Invalid checksum")
+        payload = data[header_length:]
+
+        calculated_checksum = IPV4_checksum(data[:total_length])
+        if calculated_checksum != 0:
+            return None, None
 
         src_ip = struct.unpack('!4B', header[8])
         dst_ip = struct.unpack('!4B', header[9])
@@ -92,6 +85,8 @@ class IP(LayerParser):
         checksum = IPV4_checksum(header + payload)
         header_fields[7] = checksum
         header = struct.pack(IP_HEADER_FORMAT, *header_fields)
+
+        checksum = IPV4_checksum(header + payload)
 
         return header + payload
 

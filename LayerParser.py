@@ -18,5 +18,5 @@ class Plaintext(LayerParser):
             'payload': data
         }, None
 
-    def encapsulate(self, text):
-        return text.encode('utf-8')
+    def encapsulate(self, bytes, **kwargs):
+        return bytes

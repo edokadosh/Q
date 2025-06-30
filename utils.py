@@ -1,16 +1,27 @@
 
-
 def mac_to_bytes(mac):
-    return bytes.fromhex(mac.replace(':', '').replace('-', ''))
+    try:
+        return bytes.fromhex(mac.replace(':', '').replace('-', ''))
+    except Exception as e:
+        raise ValueError(f"Failed to convert MAC to bytes. Input: {mac}") from e
 
 def bytes_to_mac(mac_bytes):
-    return ':'.join(f'{b:02x}' for b in mac_bytes)
+    try:
+        return ':'.join(f'{b:02x}' for b in mac_bytes)
+    except Exception as e:
+        raise ValueError(f"Failed to convert bytes to MAC. Input: {mac_bytes}") from e
 
 def ip_to_bytes(ip):
-    return bytes(map(int, ip.split('.')))
+    try:
+        return bytes(map(int, ip.split('.')))
+    except Exception as e:
+        raise ValueError(f"Failed to convert IP to bytes. Input: {ip}") from e
 
 def bytes_to_ip(ip_bytes):
-    return '.'.join(str(b) for b in ip_bytes)
+    try:
+        return '.'.join(str(b) for b in ip_bytes)
+    except Exception as e:
+        raise ValueError(f"Failed to convert bytes to IP. Input: {ip_bytes}") from e
 
 
 def IPV4_checksum(data):
